@@ -3,7 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
+const shajs = require("sha.js");
 
 const app = express();
 
@@ -13,10 +13,6 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String,
 });
-
-const secret = process.env.SECRET;
-
-userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
 const User = new mongoose.model("User", userSchema);
 
@@ -36,7 +32,7 @@ app
   .post(async (req, res) => {
     try {
       const username = req.body.username;
-      const password = req.body.password;
+      const password = shajs("sha256").update(req.body.password).digest("hex");
       const foundUser = await User.findOne({
         email: username,
       });
@@ -59,7 +55,7 @@ app
     try {
       const newUser = new User({
         email: req.body.username,
-        password: req.body.password,
+        password: shajs("sha256").update(req.body.password).digest("hex"),
       });
       await newUser.save();
       res.render("secrets");
