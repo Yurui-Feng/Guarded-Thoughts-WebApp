@@ -3,7 +3,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const shajs = require("sha.js");
+
+const bcrypt = require("bcrypt");
+const saltRounds = 12;
 
 const app = express();
 
@@ -32,13 +34,15 @@ app
   .post(async (req, res) => {
     try {
       const username = req.body.username;
-      const password = shajs("sha256").update(req.body.password).digest("hex");
+      const password = req.body.password;
       const foundUser = await User.findOne({
         email: username,
       });
       if (foundUser) {
-        if (foundUser.password === password) {
+        if (await bcrypt.compare(password, foundUser.password)) {
           res.render("secrets");
+        } else {
+          res.send("Wrong password");
         }
       }
     } catch (err) {
@@ -53,9 +57,10 @@ app
   })
   .post(async (req, res) => {
     try {
+      const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
       const newUser = new User({
         email: req.body.username,
-        password: shajs("sha256").update(req.body.password).digest("hex"),
+        password: hashedPassword,
       });
       await newUser.save();
       res.render("secrets");
