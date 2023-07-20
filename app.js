@@ -23,13 +23,46 @@ app.route("/").get((req, res) => {
   res.render("home");
 });
 
-app.route("/login").get((req, res) => {
-  res.render("login");
-});
+app
+  .route("/login")
+  .get((req, res) => {
+    res.render("login");
+  })
+  .post(async (req, res) => {
+    try {
+      const username = req.body.username;
+      const password = req.body.password;
+      const foundUser = await User.findOne({
+        email: username,
+        password: password,
+      });
+      if (foundUser) {
+        if (foundUser.password === password) {
+          res.render("secrets");
+        }
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  });
 
-app.route("/register").get((req, res) => {
-  res.render("register");
-});
+app
+  .route("/register")
+  .get((req, res) => {
+    res.render("register");
+  })
+  .post(async (req, res) => {
+    try {
+      const newUser = new User({
+        email: req.body.username,
+        password: req.body.password,
+      });
+      await newUser.save();
+      res.render("secrets");
+    } catch (err) {
+      console.log(err);
+    }
+  });
 
 app.listen(3000, () => {
   console.log("Server started on port 3000");
